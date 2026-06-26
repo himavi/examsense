@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { callAI } from './services/aiClient.js';
 import { cleanNotes } from './services/noteProcessor.js';
 import { generateQuestions } from './services/quizGenerator.js';
+import notesRouter from './routes/notes.js';
+import quizRouter from './routes/quiz.js';
 
 dotenv.config();
 
@@ -15,6 +17,9 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.json({ status: 'ExamSense backend running' });
 });
+
+app.use('/api/notes', notesRouter);
+app.use('/api/quiz', quizRouter);
 
 app.listen(5000, () => {
   console.log('Server running on port 5000');
