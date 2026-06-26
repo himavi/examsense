@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { callAI } from './services/aiClient.js';
+import { cleanNotes } from './services/noteProcessor.js';
 
 dotenv.config();
 
