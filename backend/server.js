@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { callAI } from './services/aiClient.js';
 import { cleanNotes } from './services/noteProcessor.js';
+import { generateQuestions } from './services/quizGenerator.js';
 
 dotenv.config();
 
