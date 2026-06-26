@@ -22,32 +22,43 @@ export default function NoteUpload({ onTopicSelect }) {
 
   return (
     <div className="note-upload">
+      <div className="page-heading">
+        <h1 className="page-heading__title">Upload Notes</h1>
+        <p className="page-heading__sub">Paste your study material and we'll extract topics to quiz you on.</p>
+      </div>
+
       <form onSubmit={handleSubmit}>
         <textarea
           className="note-upload__textarea"
           value={rawText}
           onChange={(e) => setRawText(e.target.value)}
-          placeholder="Paste your notes here..."
+          placeholder="Paste your notes, textbook content, or any study material here..."
           rows={10}
         />
-        <button className="note-upload__submit" type="submit" disabled={loading}>
-          {loading ? 'Submitting...' : 'Submit'}
-        </button>
+        <div className="note-upload__actions">
+          <button className="btn-primary note-upload__submit" type="submit" disabled={loading || !rawText.trim()}>
+            {loading ? 'Analyzing…' : 'Analyze Notes →'}
+          </button>
+        </div>
       </form>
 
       {topics.length > 0 && (
-        <ul className="note-upload__topics">
-          {topics.map((topic) => (
-            <li key={topic.title} className="note-upload__topic-item">
-              <button
-                className="note-upload__topic-btn"
-                onClick={() => onTopicSelect(noteId, topic)}
-              >
-                {topic.title}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="note-upload__topics-heading">Topics found — pick one to start</p>
+          <ul className="note-upload__topics">
+            {topics.map((topic) => (
+              <li key={topic.title}>
+                <button
+                  className="note-upload__topic-btn"
+                  onClick={() => onTopicSelect(noteId, topic)}
+                >
+                  {topic.title}
+                  <span className="note-upload__topic-arrow">→</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

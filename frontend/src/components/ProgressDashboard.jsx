@@ -26,20 +26,56 @@ export default function ProgressDashboard({ noteId }) {
   }, [noteId]);
 
   if (!noteId) return null;
-  if (loading) return <p className="dashboard__loading">Loading progress...</p>;
+
+  if (loading) return (
+    <div className="dashboard__loading">
+      <p>Loading progress…</p>
+    </div>
+  );
+
   if (error) return <p className="dashboard__error">{error}</p>;
-  if (topics.length === 0) return <p className="dashboard__empty">No progress data yet.</p>;
+  if (topics.length === 0) return <p className="dashboard__empty">No progress data yet. Complete a quiz first.</p>;
+
+  const avg = topics.reduce((sum, t) => sum + t.accuracy, 0) / topics.length;
+  const best = [...topics].sort((a, b) => b.accuracy - a.accuracy)[0];
+  const weakCount = topics.filter((t) => t.accuracy < 0.6).length;
 
   return (
     <div className="dashboard">
-      <h2 className="dashboard__title">Topic Progress</h2>
+      <div className="page-heading">
+        <h1 className="page-heading__title">Your Progress</h1>
+        <p className="page-heading__sub">Based on your quiz attempts across all topics.</p>
+      </div>
+
+      <div className="dashboard__stats">
+        <div className="stat-card">
+          <div className="stat-card__value">{Math.round(avg * 100)}%</div>
+          <div className="stat-card__label">Avg Score</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card__value">{topics.length}</div>
+          <div className="stat-card__label">Topics</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card__value">{weakCount}</div>
+          <div className="stat-card__label">Need Work</div>
+        </div>
+      </div>
+
+      <p className="dashboard__section-label">Topic breakdown</p>
       <ul className="dashboard__list">
         {topics.map((topic) => (
           <li key={topic.name} className={accuracyClass(topic.accuracy)}>
-            <span className="topic-row__name">{topic.name}</span>
-            <span className="topic-row__accuracy">
-              {Math.round(topic.accuracy * 100)}%
-            </span>
+            <div className="topic-row__top">
+              <span className="topic-row__name">{topic.name}</span>
+              <span className="topic-row__accuracy">{Math.round(topic.accuracy * 100)}%</span>
+            </div>
+            <div className="topic-row__bar-bg">
+              <div
+                className="topic-row__bar-fill"
+                style={{ width: `${Math.round(topic.accuracy * 100)}%` }}
+              />
+            </div>
           </li>
         ))}
       </ul>

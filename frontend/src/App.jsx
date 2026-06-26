@@ -23,27 +23,56 @@ export default function App() {
 
   return (
     <div className="app">
-      {view === 'upload' && (
-        <NoteUpload onTopicSelect={handleTopicSelect} />
-      )}
+      <header className="app__header">
+        <span className="app__logo">ExamSense</span>
+        {noteId && (
+          <nav className="app__nav">
+            <button
+              className={`app__nav-tab ${view === 'upload' ? 'active' : ''}`}
+              onClick={() => setView('upload')}
+            >
+              Notes
+            </button>
+            <button
+              className={`app__nav-tab ${view === 'quiz' ? 'active' : ''}`}
+              onClick={() => setView('quiz')}
+            >
+              Quiz
+            </button>
+            <button
+              className={`app__nav-tab ${view === 'dashboard' ? 'active' : ''}`}
+              onClick={() => setView('dashboard')}
+            >
+              Progress
+            </button>
+          </nav>
+        )}
+      </header>
 
-      {view === 'quiz' && (
-        <>
-          <QuizView noteId={noteId} topic={selectedTopic} />
-          <button className="app__nav-btn" onClick={() => setView('dashboard')}>
-            View Progress
-          </button>
-        </>
-      )}
+      <main className="app__content">
+        {view === 'upload' && (
+          <NoteUpload onTopicSelect={handleTopicSelect} />
+        )}
 
-      {view === 'dashboard' && (
-        <>
-          <ProgressDashboard noteId={noteId} />
-          <button className="app__nav-btn" onClick={handleReset}>
-            Back to Upload
-          </button>
-        </>
-      )}
+        {view === 'quiz' && (
+          <>
+            <QuizView
+              noteId={noteId}
+              topic={selectedTopic}
+              onFinish={() => setView('dashboard')}
+            />
+          </>
+        )}
+
+        {view === 'dashboard' && (
+          <>
+            <ProgressDashboard noteId={noteId} />
+            <button className="btn-ghost app__nav-btn" onClick={handleReset}>
+              ← New Notes
+            </button>
+          </>
+        )}
+      </main>
     </div>
   );
 }
