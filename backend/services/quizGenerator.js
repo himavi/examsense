@@ -11,7 +11,10 @@ Topic: ${topic.title}
 ${topic.summary}`;
 
   const raw = await callAI(prompt);
-  const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+  let cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+  const start = cleaned.indexOf('[');
+  const end = cleaned.lastIndexOf(']');
+  if (start !== -1 && end !== -1) cleaned = cleaned.slice(start, end + 1);
 
   try {
     return JSON.parse(cleaned);
