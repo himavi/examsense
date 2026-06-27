@@ -22,3 +22,20 @@ ${topic.summary}`;
     throw new Error('Failed to parse quiz questions');
   }
 }
+
+export async function explainWeakTopic(topicTitle, wrongQuestions) {
+  try {
+    const questionList = wrongQuestions
+      .map((q, i) => `${i + 1}. Question: ${q.question_text}\n   Correct answer: ${q.correct_answer}`)
+      .join('\n');
+
+    const prompt = `You are a study tutor. A student got the following questions wrong on the topic "${topicTitle}". Write a short, focused explanation of 3-4 sentences that targets the specific misunderstanding shown by these wrong answers.
+
+Questions the student got wrong:
+${questionList}`;
+
+    return await callAI(prompt);
+  } catch (err) {
+    throw new Error(`Failed to generate explanation: ${err.message}`);
+  }
+}

@@ -555,6 +555,36 @@ button:disabled {
 .topic-row--warning .topic-row__bar-fill { background: var(--yellow); }
 .topic-row--danger  .topic-row__bar-fill { background: var(--danger); }
 
+.topic-row__explain-btn {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.3rem 0.7rem;
+  margin-top: 0.25rem;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.topic-row__explain-btn:hover:not(:disabled) {
+  color: var(--red);
+  border-color: var(--red);
+  background: transparent;
+}
+
+.topic-row__explanation {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin-top: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface-2);
+  border-left: 2px solid var(--red);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
 .dashboard__loading,
 .dashboard__empty {
   padding: 4rem 0;

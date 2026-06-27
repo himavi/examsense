@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { getWeakTopics } from '../api.js';
 
+async function getExplanation(topic) {
+  const res = await fetch(`http://localhost:5000/api/quiz/explain/${encodeURIComponent(topic)}`);
+  if (!res.ok) throw new Error('Failed to fetch explanation');
+  return res.json();
+}
+
 function accuracyClass(accuracy) {
   if (accuracy < 0.4) return 'topic-row topic-row--danger';
   if (accuracy < 0.6) return 'topic-row topic-row--warning';
@@ -11,6 +17,21 @@ export default function ProgressDashboard({ noteId }) {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [explanations, setExplanations] = useState({});
+  const [explaining, setExplaining] = useState({});
+
+  async function handleExplain(topicName) {
+    if (explanations[topicName] || explaining[topicName]) return;
+    setExplaining((prev) => ({ ...prev, [topicName]: true }));
+    try {
+      const data = await getExplanation(topicName);
+      setExplanations((prev) => ({ ...prev, [topicName]: data.explanation ?? data.text ?? JSON.stringify(data) }));
+    } catch {
+      setExplanations((prev) => ({ ...prev, [topicName]: 'Could not load explanation. Please try again.' }));
+    } finally {
+      setExplaining((prev) => ({ ...prev, [topicName]: false }));
+    }
+  }
 
   useEffect(() => {
     if (!noteId) return;
@@ -65,9 +86,9 @@ export default function ProgressDashboard({ noteId }) {
       <p className="dashboard__section-label">Topic breakdown</p>
       <ul className="dashboard__list">
         {topics.map((topic) => (
-          <li key={topic.name} className={accuracyClass(topic.accuracy)}>
+          <li key={topic.topic} className={accuracyClass(topic.accuracy)}>
             <div className="topic-row__top">
-              <span className="topic-row__name">{topic.name}</span>
+              <span className="topic-row__name">{topic.topic}</span>
               <span className="topic-row__accuracy">{Math.round(topic.accuracy * 100)}%</span>
             </div>
             <div className="topic-row__bar-bg">
@@ -76,6 +97,20 @@ export default function ProgressDashboard({ noteId }) {
                 style={{ width: `${Math.round(topic.accuracy * 100)}%` }}
               />
             </div>
+            {topic.accuracy < 0.7 && (
+              <>
+                <button
+                  className="topic-row__explain-btn"
+                  onClick={() => handleExplain(topic.topic)}
+                  disabled={explaining[topic.topic]}
+                >
+                  {explaining[topic.topic] ? 'Loading…' : 'Why am I struggling?'}
+                </button>
+                {explanations[topic.topic] && (
+                  <p className="topic-row__explanation">{explanations[topic.topic]}</p>
+                )}
+              </>
+            )}
           </li>
         ))}
       </ul>

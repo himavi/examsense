@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db from '../db/db.js';
-import { generateQuestions } from '../services/quizGenerator.js';
+import { generateQuestions, explainWeakTopic } from '../services/quizGenerator.js';
 
 const router = Router();
 
@@ -71,6 +71,27 @@ router.get('/weak-topics/:noteId', (req, res) => {
     })).sort((a, b) => a.accuracy - b.accuracy);
 
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/explain/:topic', async (req, res) => {
+  try {
+    const { topic: topicTitle } = req.params;
+    const wrongQuestions = db.prepare(`
+      SELECT q.question_text, q.correct_answer
+      FROM questions q
+      JOIN attempts a ON a.question_id = q.id
+      WHERE a.is_correct = 0 AND q.topic_title = ?
+    `).all(topicTitle);
+
+    if (wrongQuestions.length === 0) {
+      return res.json({ explanation: null });
+    }
+
+    const explanation = await explainWeakTopic(topicTitle, wrongQuestions);
+    res.json({ explanation });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
