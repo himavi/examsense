@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { getWeakTopics } from '../api.js';
 
 async function getExplanation(topic) {
-  const res = await fetch(`http://localhost:5000/api/quiz/explain/${encodeURIComponent(topic)}`);
+  const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const res = await fetch(`${BASE}/quiz/explain/${encodeURIComponent(topic)}`);
   if (!res.ok) throw new Error('Failed to fetch explanation');
   return res.json();
 }
