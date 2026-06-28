@@ -8,14 +8,15 @@ async function getExplanation(topic) {
   return res.json();
 }
 
-function accuracyClass(accuracy) {
+function accuracyClass(accuracy, attempted) {
+  if (!attempted) return 'topic-row topic-row--pending';
   if (accuracy < 0.4) return 'topic-row topic-row--danger';
   if (accuracy < 0.6) return 'topic-row topic-row--warning';
   return 'topic-row';
 }
 
-export default function ProgressDashboard({ noteId }) {
-  const [topics, setTopics] = useState([]);
+export default function ProgressDashboard({ noteId, topics = [] }) {
+  const [progress, setProgress] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [explanations, setExplanations] = useState({});
@@ -39,10 +40,7 @@ export default function ProgressDashboard({ noteId }) {
     setLoading(true);
     setError(null);
     getWeakTopics(noteId)
-      .then((data) => {
-        const sorted = [...(data ?? [])].sort((a, b) => a.accuracy - b.accuracy);
-        setTopics(sorted);
-      })
+      .then((data) => setProgress(data ?? []))
       .catch(() => setError('Failed to load progress data.'))
       .finally(() => setLoading(false));
   }, [noteId]);
@@ -56,11 +54,33 @@ export default function ProgressDashboard({ noteId }) {
   );
 
   if (error) return <p className="dashboard__error">{error}</p>;
-  if (topics.length === 0) return <p className="dashboard__empty">No progress data yet. Complete a quiz first.</p>;
 
-  const avg = topics.reduce((sum, t) => sum + t.accuracy, 0) / topics.length;
-  const best = [...topics].sort((a, b) => b.accuracy - a.accuracy)[0];
-  const weakCount = topics.filter((t) => t.accuracy < 0.6).length;
+  // Merge the full topic list from the note with attempt-based accuracy.
+  const accuracyByTopic = new Map(progress.map((p) => [p.topic, p.accuracy]));
+  const titles = topics.length > 0 ? topics.map((t) => t.title) : progress.map((p) => p.topic);
+
+  const rows = titles
+    .map((title) => {
+      const attempted = accuracyByTopic.has(title);
+      return { topic: title, attempted, accuracy: attempted ? accuracyByTopic.get(title) : 0 };
+    })
+    .sort((a, b) => {
+      if (a.attempted !== b.attempted) return a.attempted ? -1 : 1;
+      return a.accuracy - b.accuracy;
+    });
+
+  if (rows.length === 0) {
+    return <p className="dashboard__empty">No topics yet. Upload notes to get started.</p>;
+  }
+
+  const attemptedRows = rows.filter((r) => r.attempted);
+  const totalCount = rows.length;
+  const completedCount = attemptedRows.length;
+  const avg = completedCount > 0 ? attemptedRows.reduce((s, t) => s + t.accuracy, 0) / completedCount : 0;
+  const weakCount = attemptedRows.filter((t) => t.accuracy < 0.6).length;
+
+  // Total progress across ALL topics: not-yet-attempted topics count as 0.
+  const overall = rows.reduce((s, t) => s + t.accuracy, 0) / totalCount;
 
   return (
     <div className="dashboard">
@@ -71,12 +91,12 @@ export default function ProgressDashboard({ noteId }) {
 
       <div className="dashboard__stats">
         <div className="stat-card">
-          <div className="stat-card__value">{Math.round(avg * 100)}%</div>
+          <div className="stat-card__value">{completedCount > 0 ? `${Math.round(avg * 100)}%` : '—'}</div>
           <div className="stat-card__label">Avg Score</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card__value">{topics.length}</div>
-          <div className="stat-card__label">Topics</div>
+          <div className="stat-card__value">{completedCount}/{totalCount}</div>
+          <div className="stat-card__label">Completed</div>
         </div>
         <div className="stat-card">
           <div className="stat-card__value">{weakCount}</div>
@@ -86,35 +106,48 @@ export default function ProgressDashboard({ noteId }) {
 
       <p className="dashboard__section-label">Topic breakdown</p>
       <ul className="dashboard__list">
-        {topics.map((topic) => (
-          <li key={topic.topic} className={accuracyClass(topic.accuracy)}>
+        {rows.map((row) => (
+          <li key={row.topic} className={accuracyClass(row.accuracy, row.attempted)}>
             <div className="topic-row__top">
-              <span className="topic-row__name">{topic.topic}</span>
-              <span className="topic-row__accuracy">{Math.round(topic.accuracy * 100)}%</span>
+              <span className="topic-row__name">{row.topic}</span>
+              <span className="topic-row__accuracy">
+                {row.attempted ? `${Math.round(row.accuracy * 100)}%` : 'Not started'}
+              </span>
             </div>
             <div className="topic-row__bar-bg">
               <div
                 className="topic-row__bar-fill"
-                style={{ width: `${Math.round(topic.accuracy * 100)}%` }}
+                style={{ width: `${Math.round(row.accuracy * 100)}%` }}
               />
             </div>
-            {topic.accuracy < 0.7 && (
+            {row.attempted && row.accuracy < 0.7 && (
               <>
                 <button
                   className="topic-row__explain-btn"
-                  onClick={() => handleExplain(topic.topic)}
-                  disabled={explaining[topic.topic]}
+                  onClick={() => handleExplain(row.topic)}
+                  disabled={explaining[row.topic]}
                 >
-                  {explaining[topic.topic] ? 'Loading…' : 'Why am I struggling?'}
+                  {explaining[row.topic] ? 'Loading…' : 'Why am I struggling?'}
                 </button>
-                {explanations[topic.topic] && (
-                  <p className="topic-row__explanation">{explanations[topic.topic]}</p>
+                {explanations[row.topic] && (
+                  <p className="topic-row__explanation">{explanations[row.topic]}</p>
                 )}
               </>
             )}
           </li>
         ))}
       </ul>
+
+      <div className="dashboard__total">
+        <div className="dashboard__total-head">
+          <span className="dashboard__total-label">Total Progress</span>
+          <span className="dashboard__total-value">{Math.round(overall * 100)}%</span>
+        </div>
+        <div className="dashboard__total-bar-bg">
+          <div className="dashboard__total-bar-fill" style={{ width: `${Math.round(overall * 100)}%` }} />
+        </div>
+        <p className="dashboard__total-sub">{completedCount} of {totalCount} topics attempted</p>
+      </div>
     </div>
   );
 }

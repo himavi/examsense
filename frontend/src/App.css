@@ -598,7 +598,116 @@ button:disabled {
   color: var(--danger);
 }
 
-/* ── Nav button in content area ── */
-.app__nav-btn {
+/* ── Dashboard action buttons ── */
+.dashboard__actions {
+  display: flex;
+  gap: 0.6rem;
   margin-top: 2rem;
+}
+
+/* ── Quiz complete actions ── */
+.quiz__complete-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* ── Active (currently selected) topic button ── */
+.note-upload__topic-btn.active {
+  border-color: var(--red);
+  background: var(--red-dim);
+}
+
+.note-upload__topic-btn.active .note-upload__topic-arrow {
+  color: var(--red);
+}
+
+/* ── Pending (not-yet-attempted) topic row ── */
+.topic-row--pending {
+  opacity: 0.7;
+}
+
+.topic-row--pending .topic-row__accuracy {
+  color: var(--text-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Total progress bar ── */
+.dashboard__total {
+  margin-top: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+}
+
+.dashboard__total-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.7rem;
+}
+
+.dashboard__total-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.dashboard__total-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.dashboard__total-bar-bg {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dashboard__total-bar-fill {
+  height: 100%;
+  background: var(--red);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.dashboard__total-sub {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  margin-top: 0.6rem;
+}
+
+/* ── Notes: attempted-topic marker ── */
+.note-upload__topic-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
+.note-upload__topic-score {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.note-upload__topic-score--warning { color: var(--yellow); }
+.note-upload__topic-score--danger  { color: var(--danger); }
+
+.note-upload__topic-btn--done {
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+.note-upload__topic-btn--done .note-upload__topic-arrow {
+  color: var(--green);
 }

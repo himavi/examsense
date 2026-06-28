@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { generateQuiz, submitAttempt } from '../api.js';
 
-export default function QuizView({ noteId, topic, onFinish }) {
+export default function QuizView({ noteId, topic, onFinish, onPickAnother }) {
   const [questions, setQuestions] = useState([]);
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -61,11 +61,18 @@ export default function QuizView({ noteId, topic, onFinish }) {
         <p className="quiz__complete-sub">
           {score} of {questions.length} correct on {topic.title}
         </p>
-        {onFinish && (
-          <button className="btn-primary" onClick={onFinish}>
-            View Progress →
-          </button>
-        )}
+        <div className="quiz__complete-actions">
+          {onFinish && (
+            <button className="btn-primary" onClick={onFinish}>
+              View Progress →
+            </button>
+          )}
+          {onPickAnother && (
+            <button className="btn-ghost" onClick={onPickAnother}>
+              Choose Another Topic
+            </button>
+          )}
+        </div>
       </div>
     );
   }
