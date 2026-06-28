@@ -31,3 +31,8 @@ export async function getWeakTopics(noteId) {
   const res = await fetch(`${BASE}/quiz/weak-topics/${noteId}`);
   return res.json();
 }
+
+export async function getUsageAreas() {
+  const res = await fetch(`${BASE}/geo/areas`);
+  return res.json();
+}

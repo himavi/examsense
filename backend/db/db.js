@@ -31,6 +31,15 @@ db.exec(`
     is_correct INTEGER,
     attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS usage_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event TEXT,
+    country TEXT,
+    region TEXT,
+    city TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 export default db;

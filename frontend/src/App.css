@@ -711,3 +711,68 @@ button:disabled {
 .note-upload__topic-btn--done .note-upload__topic-arrow {
   color: var(--green);
 }
+
+/* ── Usage by area ── */
+.usage__status {
+  padding: 2rem 0;
+  color: var(--text-2);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.usage__status--error {
+  color: var(--danger);
+}
+
+.usage__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.usage__row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.usage__row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.usage__area {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.usage__count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--red);
+}
+
+.usage__bar-bg {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.usage__bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--red);
+  transition: width 0.5s ease;
+}
+
+.usage__back {
+  margin-top: 2rem;
+}

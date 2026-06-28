@@ -3,6 +3,7 @@ import { getWeakTopics } from './api.js';
 import NoteUpload from './components/NoteUpload';
 import QuizView from './components/QuizView';
 import ProgressDashboard from './components/ProgressDashboard';
+import UsageAreas from './components/UsageAreas';
 import './App.css';
 
 export default function App() {
@@ -53,29 +54,37 @@ export default function App() {
     <div className="app">
       <header className="app__header">
         <span className="app__logo">ExamSense</span>
-        {noteId && (
-          <nav className="app__nav">
-            <button
-              className={`app__nav-tab ${view === 'upload' ? 'active' : ''}`}
-              onClick={() => setView('upload')}
-            >
-              Notes
-            </button>
-            <button
-              className={`app__nav-tab ${view === 'quiz' ? 'active' : ''}`}
-              onClick={() => setView('quiz')}
-              disabled={!selectedTopic}
-            >
-              Quiz
-            </button>
-            <button
-              className={`app__nav-tab ${view === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setView('dashboard')}
-            >
-              Progress
-            </button>
-          </nav>
-        )}
+        <nav className="app__nav">
+          {noteId && (
+            <>
+              <button
+                className={`app__nav-tab ${view === 'upload' ? 'active' : ''}`}
+                onClick={() => setView('upload')}
+              >
+                Notes
+              </button>
+              <button
+                className={`app__nav-tab ${view === 'quiz' ? 'active' : ''}`}
+                onClick={() => setView('quiz')}
+                disabled={!selectedTopic}
+              >
+                Quiz
+              </button>
+              <button
+                className={`app__nav-tab ${view === 'dashboard' ? 'active' : ''}`}
+                onClick={() => setView('dashboard')}
+              >
+                Progress
+              </button>
+            </>
+          )}
+          <button
+            className={`app__nav-tab ${view === 'usage' ? 'active' : ''}`}
+            onClick={() => setView('usage')}
+          >
+            Areas
+          </button>
+        </nav>
       </header>
 
       <main className="app__content">
@@ -112,6 +121,10 @@ export default function App() {
               </button>
             </div>
           </>
+        )}
+
+        {view === 'usage' && (
+          <UsageAreas onBack={() => setView('upload')} />
         )}
       </main>
     </div>
