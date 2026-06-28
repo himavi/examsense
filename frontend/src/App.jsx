@@ -13,6 +13,15 @@ export default function App() {
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [rawText, setRawText] = useState('');
   const [attempted, setAttempted] = useState({});
+  const [adminKey] = useState(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get('admin');
+    if (fromUrl) {
+      localStorage.setItem('examsense_admin_key', fromUrl);
+      return fromUrl;
+    }
+    return localStorage.getItem('examsense_admin_key') || '';
+  });
+  const isAdmin = !!adminKey;
 
   // Refresh attempted-topic markers from the backend whenever the Notes list is shown.
   useEffect(() => {
@@ -78,12 +87,14 @@ export default function App() {
               </button>
             </>
           )}
-          <button
-            className={`app__nav-tab ${view === 'usage' ? 'active' : ''}`}
-            onClick={() => setView('usage')}
-          >
-            Areas
-          </button>
+          {isAdmin && (
+            <button
+              className={`app__nav-tab ${view === 'usage' ? 'active' : ''}`}
+              onClick={() => setView('usage')}
+            >
+              Areas
+            </button>
+          )}
         </nav>
       </header>
 
@@ -123,8 +134,8 @@ export default function App() {
           </>
         )}
 
-        {view === 'usage' && (
-          <UsageAreas onBack={() => setView('upload')} />
+        {view === 'usage' && isAdmin && (
+          <UsageAreas adminKey={adminKey} onBack={() => setView('upload')} />
         )}
       </main>
     </div>

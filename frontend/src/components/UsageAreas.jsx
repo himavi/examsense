@@ -6,7 +6,7 @@ function areaLabel(row) {
   return parts.length ? parts.join(', ') : 'Unknown area';
 }
 
-export default function UsageAreas({ onBack }) {
+export default function UsageAreas({ adminKey, onBack }) {
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,11 +14,11 @@ export default function UsageAreas({ onBack }) {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    getUsageAreas()
+    getUsageAreas(adminKey)
       .then((data) => setAreas(Array.isArray(data) ? data : []))
-      .catch(() => setError('Failed to load usage data.'))
+      .catch((e) => setError(e.status === 401 ? 'unauthorized' : 'failed'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [adminKey]);
 
   const total = areas.reduce((sum, a) => sum + a.count, 0);
 
@@ -30,7 +30,12 @@ export default function UsageAreas({ onBack }) {
       </div>
 
       {loading && <p className="usage__status">Loading…</p>}
-      {error && <p className="usage__status usage__status--error">{error}</p>}
+      {error === 'unauthorized' && (
+        <p className="usage__status usage__status--error">
+          Not authorized. Open the site with your admin key, e.g. ?admin=YOUR_KEY
+        </p>
+      )}
+      {error === 'failed' && <p className="usage__status usage__status--error">Failed to load usage data.</p>}
 
       {!loading && !error && areas.length === 0 && (
         <p className="usage__status">

@@ -32,7 +32,14 @@ export async function getWeakTopics(noteId) {
   return res.json();
 }
 
-export async function getUsageAreas() {
-  const res = await fetch(`${BASE}/geo/areas`);
+export async function getUsageAreas(adminKey) {
+  const res = await fetch(`${BASE}/geo/areas`, {
+    headers: adminKey ? { 'x-admin-key': adminKey } : {},
+  });
+  if (res.status === 401) {
+    const err = new Error('unauthorized');
+    err.status = 401;
+    throw err;
+  }
   return res.json();
 }
