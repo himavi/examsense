@@ -31,9 +31,21 @@ initDb()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      keepAwake();
     });
   })
   .catch((err) => {
     console.error('Database initialisation failed:', err);
     process.exit(1);
   });
+
+// Render's free plan sleeps a service after 15 minutes without inbound traffic.
+// A request to our own public URL counts as traffic, so once awake we stay awake.
+// RENDER_EXTERNAL_URL is set by Render automatically; locally this does nothing.
+function keepAwake() {
+  const url = process.env.RENDER_EXTERNAL_URL;
+  if (!url) return;
+  setInterval(() => {
+    fetch(url).catch(() => {});
+  }, 10 * 60 * 1000);
+}
