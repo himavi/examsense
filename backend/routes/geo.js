@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import db from '../db/db.js';
+import db, { plainRows } from '../db/db.js';
 import { locate } from '../services/geo.js';
 
 const router = Router();
@@ -19,14 +19,18 @@ router.get('/me', (req, res) => {
 });
 
 // Aggregated areas where the app has been used — admin only.
-router.get('/areas', requireAdmin, (req, res) => {
-  const rows = db.prepare(`
-    SELECT country, region, city, COUNT(*) AS count
-    FROM usage_events
-    GROUP BY country, region, city
-    ORDER BY count DESC
-  `).all();
-  res.json(rows);
+router.get('/areas', requireAdmin, async (req, res) => {
+  try {
+    const result = await db.execute(`
+      SELECT country, region, city, COUNT(*) AS count
+      FROM usage_events
+      GROUP BY country, region, city
+      ORDER BY count DESC
+    `);
+    res.json(plainRows(result));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;

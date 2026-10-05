@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import db from '../db/db.js';
+import db, { rowId } from '../db/db.js';
 import { cleanNotes } from '../services/noteProcessor.js';
 import { logUsage } from '../services/geo.js';
 
@@ -9,11 +9,12 @@ router.post('/', async (req, res) => {
   try {
     const { rawText } = req.body;
     const topics = await cleanNotes(rawText);
-    const { lastInsertRowid } = db.prepare(
-      'INSERT INTO notes (raw_text, topics_json) VALUES (?, ?)'
-    ).run(rawText, JSON.stringify(topics));
+    const result = await db.execute({
+      sql: 'INSERT INTO notes (raw_text, topics_json) VALUES (?, ?)',
+      args: [rawText, JSON.stringify(topics)],
+    });
     logUsage(req, 'note_created');
-    res.json({ noteId: lastInsertRowid, topics });
+    res.json({ noteId: rowId(result), topics });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

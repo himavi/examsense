@@ -1,10 +1,6 @@
 import geoip from 'geoip-lite';
 import db from '../db/db.js';
 
-const insertEvent = db.prepare(
-  'INSERT INTO usage_events (event, country, region, city) VALUES (?, ?, ?, ?)'
-);
-
 // Pull the real client IP (honors x-forwarded-for when behind a proxy).
 export function getClientIp(req) {
   const fwd = (req.headers['x-forwarded-for'] || '').split(',')[0].trim();
@@ -24,11 +20,15 @@ export function locate(req) {
   };
 }
 
-// Record where an action happened, for usage analytics.
+// Record where an action happened, for usage analytics. Fire-and-forget:
+// the insert is not awaited, so analytics never slows down or breaks a request.
 export function logUsage(req, event = 'note_created') {
   try {
     const loc = locate(req);
-    insertEvent.run(event, loc?.country ?? null, loc?.region ?? null, loc?.city ?? null);
+    db.execute({
+      sql: 'INSERT INTO usage_events (event, country, region, city) VALUES (?, ?, ?, ?)',
+      args: [event, loc?.country ?? null, loc?.region ?? null, loc?.city ?? null],
+    }).catch(() => {});
     return loc;
   } catch {
     return null; // never let analytics break the request

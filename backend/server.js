@@ -7,6 +7,7 @@ import { generateQuestions } from './services/quizGenerator.js';
 import notesRouter from './routes/notes.js';
 import quizRouter from './routes/quiz.js';
 import geoRouter from './routes/geo.js';
+import { initDb } from './db/db.js';
 
 dotenv.config();
 
@@ -26,6 +27,13 @@ app.use('/api/geo', geoRouter);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+initDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Database initialisation failed:', err);
+    process.exit(1);
+  });

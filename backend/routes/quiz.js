@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import db from '../db/db.js';
+import db, { rowId, plainRows } from '../db/db.js';
 import { generateQuestions, explainWeakTopic } from '../services/quizGenerator.js';
 
 const router = Router();
@@ -7,26 +7,22 @@ const router = Router();
 router.post('/generate', async (req, res) => {
   try {
     const { noteId, topic } = req.body;
-    const existing = db.prepare(
-      'SELECT question_text FROM questions WHERE note_id = ? AND topic_title = ?'
-    ).all(noteId, topic.title);
-    const existingQuestionTexts = existing.map(r => r.question_text);
+    const existing = await db.execute({
+      sql: 'SELECT question_text FROM questions WHERE note_id = ? AND topic_title = ?',
+      args: [noteId, topic.title],
+    });
+    const existingQuestionTexts = existing.rows.map(r => r.question_text);
 
     const questions = await generateQuestions(topic, existingQuestionTexts);
 
-    const insert = db.prepare(
-      'INSERT INTO questions (note_id, topic_title, question_text, options_json, correct_answer) VALUES (?, ?, ?, ?, ?)'
+    const results = await db.batch(
+      questions.map(q => ({
+        sql: 'INSERT INTO questions (note_id, topic_title, question_text, options_json, correct_answer) VALUES (?, ?, ?, ?, ?)',
+        args: [noteId, topic.title, q.question, JSON.stringify(q.options), q.correctAnswer],
+      })),
+      'write'
     );
-    const inserted = questions.map(q => {
-      const { lastInsertRowid } = insert.run(
-        noteId,
-        topic.title,
-        q.question,
-        JSON.stringify(q.options),
-        q.correctAnswer
-      );
-      return { id: lastInsertRowid, ...q };
-    });
+    const inserted = questions.map((q, i) => ({ id: rowId(results[i]), ...q }));
 
     res.json(inserted);
   } catch (err) {
@@ -37,14 +33,16 @@ router.post('/generate', async (req, res) => {
 router.post('/attempt', async (req, res) => {
   try {
     const { questionId, userAnswer } = req.body;
-    const question = db.prepare(
-      'SELECT correct_answer FROM questions WHERE id = ?'
-    ).get(questionId);
+    const { rows: [question] } = await db.execute({
+      sql: 'SELECT correct_answer FROM questions WHERE id = ?',
+      args: [questionId],
+    });
 
     const isCorrect = question.correct_answer === userAnswer ? 1 : 0;
-    db.prepare(
-      'INSERT INTO attempts (question_id, user_answer, is_correct) VALUES (?, ?, ?)'
-    ).run(questionId, userAnswer, isCorrect);
+    await db.execute({
+      sql: 'INSERT INTO attempts (question_id, user_answer, is_correct) VALUES (?, ?, ?)',
+      args: [questionId, userAnswer, isCorrect],
+    });
 
     res.json({ isCorrect: isCorrect === 1 });
   } catch (err) {
@@ -52,10 +50,11 @@ router.post('/attempt', async (req, res) => {
   }
 });
 
-router.get('/weak-topics/:noteId', (req, res) => {
+router.get('/weak-topics/:noteId', async (req, res) => {
   try {
     const { noteId } = req.params;
-    const rows = db.prepare(`
+    const { rows } = await db.execute({
+      sql: `
       SELECT q.topic_title AS topic,
              COUNT(a.id) AS total,
              SUM(CASE WHEN a.is_correct = 0 THEN 1 ELSE 0 END) AS wrong
@@ -63,7 +62,9 @@ router.get('/weak-topics/:noteId', (req, res) => {
       JOIN attempts a ON a.question_id = q.id
       WHERE q.note_id = ?
       GROUP BY q.topic_title
-    `).all(noteId);
+    `,
+      args: [noteId],
+    });
 
     const result = rows.map(r => ({
       topic: r.topic,
@@ -79,12 +80,15 @@ router.get('/weak-topics/:noteId', (req, res) => {
 router.get('/explain/:topic', async (req, res) => {
   try {
     const { topic: topicTitle } = req.params;
-    const wrongQuestions = db.prepare(`
+    const wrongQuestions = plainRows(await db.execute({
+      sql: `
       SELECT q.question_text, q.correct_answer
       FROM questions q
       JOIN attempts a ON a.question_id = q.id
       WHERE a.is_correct = 0 AND q.topic_title = ?
-    `).all(topicTitle);
+    `,
+      args: [topicTitle],
+    }));
 
     if (wrongQuestions.length === 0) {
       return res.json({ explanation: null });
