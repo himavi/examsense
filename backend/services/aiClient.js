@@ -1,3 +1,6 @@
+// Groq retires models over time; override with GROQ_MODEL instead of editing code.
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
+
 export async function callAI(prompt) {
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -7,8 +10,9 @@ export async function callAI(prompt) {
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: MODEL,
         messages: [{ role: 'user', content: prompt }],
+        reasoning_effort: 'low',
       }),
     });
 
