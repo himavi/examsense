@@ -1,11 +1,165 @@
+/* ── Design tokens ─────────────────────────────────────────────
+   Calm "paper and ink" palette: warm off-white surfaces, one ink-blue
+   accent, and semantic green / red / amber reserved for answers and scores. */
+:root {
+  color-scheme: light;
+
+  --bg: #f6f4ee;
+  --bg-tint: #efece4;
+  --surface: #fffefb;
+  --surface-2: #f3f1ea;
+  --border: #e2ded3;
+  --border-strong: #c9c3b5;
+
+  --text: #1b1a17;
+  --text-2: #4f4c45;
+  --text-3: #6b675e;
+
+  --accent: #2b47c4;
+  --accent-hover: #2139a6;
+  --accent-soft: #e9edfb;
+  --accent-soft-hover: #dde3f8;
+  --accent-ink: #1f3699;
+  --on-accent: #ffffff;
+
+  --good: #17754b;
+  --good-bar: #2a9a68;
+  --good-soft: #e3f3ea;
+  --good-border: #9fd3b8;
+  --danger: #b3261e;
+  --danger-bar: #d0453b;
+  --danger-soft: #fbe9e7;
+  --danger-border: #eeb3ad;
+  --warning: #8a5600;
+  --warning-bar: #d99a1e;
+  --warning-soft: #fbf0d9;
+  --warning-border: #e9cd8f;
+
+  --focus: #2b47c4;
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+
+  --shadow-sm: 0 1px 2px rgb(27 26 23 / 0.05);
+  --shadow: 0 1px 2px rgb(27 26 23 / 0.04), 0 10px 30px -14px rgb(27 26 23 / 0.14);
+  --shadow-lift: 0 2px 4px rgb(27 26 23 / 0.05), 0 16px 36px -16px rgb(27 26 23 / 0.22);
+
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --bg: #121311;
+    --bg-tint: #171816;
+    --surface: #1b1c1a;
+    --surface-2: #232421;
+    --border: #2e2f2b;
+    --border-strong: #45463f;
+
+    --text: #eceae4;
+    --text-2: #bdbab1;
+    --text-3: #a09d93;
+
+    --accent: #8fa6ff;
+    --accent-hover: #a9bbff;
+    --accent-soft: #1f2540;
+    --accent-soft-hover: #283052;
+    --accent-ink: #b7c5ff;
+    --on-accent: #10142a;
+
+    --good: #6fd3a0;
+    --good-bar: #45b47e;
+    --good-soft: #14291f;
+    --good-border: #2c5a43;
+    --danger: #ff9b90;
+    --danger-bar: #e0675c;
+    --danger-soft: #331a18;
+    --danger-border: #6b2f2a;
+    --warning: #f1c26a;
+    --warning-bar: #d9a336;
+    --warning-soft: #2e2512;
+    --warning-border: #5f4b1f;
+
+    --focus: #a9bbff;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.35), 0 12px 30px -16px rgb(0 0 0 / 0.6);
+    --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.4), 0 18px 40px -18px rgb(0 0 0 / 0.7);
+  }
+}
+
+/* ── Reset ─────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+a {
+  color: inherit;
+}
+
+img, svg {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

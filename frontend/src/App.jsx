@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getWeakTopics } from './api.js';
 import NoteUpload from './components/NoteUpload';
 import QuizView from './components/QuizView';
 import ProgressDashboard from './components/ProgressDashboard';
 import UsageAreas from './components/UsageAreas';
+import { Icon, LogoMark } from './components/ui';
 import './App.css';
 
 export default function App() {
@@ -22,6 +23,8 @@ export default function App() {
     return localStorage.getItem('examsense_admin_key') || '';
   });
   const isAdmin = !!adminKey;
+  const mainRef = useRef(null);
+  const prevView = useRef(view);
 
   // Refresh attempted-topic markers from the backend whenever the Notes list is shown.
   useEffect(() => {
@@ -37,6 +40,15 @@ export default function App() {
       .catch(() => {});
     return () => { active = false; };
   }, [view, noteId]);
+
+  // On view change, move focus to the main region and scroll to top so keyboard
+  // and screen-reader users land at the start of the new screen.
+  useEffect(() => {
+    if (prevView.current === view) return;
+    prevView.current = view;
+    window.scrollTo({ top: 0 });
+    mainRef.current?.focus({ preventScroll: true });
+  }, [view]);
 
   function handleAnalyzed(id, foundTopics) {
     setNoteId(id);
@@ -59,46 +71,49 @@ export default function App() {
     setView('upload');
   }
 
+  const tabs = [];
+  if (noteId) {
+    tabs.push(
+      { id: 'upload', label: 'Notes', icon: 'doc' },
+      { id: 'quiz', label: 'Quiz', icon: 'layers', disabled: !selectedTopic },
+      { id: 'dashboard', label: 'Progress', icon: 'chart' },
+    );
+  }
+  if (isAdmin) tabs.push({ id: 'usage', label: 'Areas', icon: 'chart' });
+
   return (
     <div className="app">
+      <a className="skip-link" href="#main">Skip to content</a>
+
       <header className="app__header">
-        <span className="app__logo">ExamSense</span>
-        <nav className="app__nav">
-          {noteId && (
-            <>
-              <button
-                className={`app__nav-tab ${view === 'upload' ? 'active' : ''}`}
-                onClick={() => setView('upload')}
-              >
-                Notes
-              </button>
-              <button
-                className={`app__nav-tab ${view === 'quiz' ? 'active' : ''}`}
-                onClick={() => setView('quiz')}
-                disabled={!selectedTopic}
-              >
-                Quiz
-              </button>
-              <button
-                className={`app__nav-tab ${view === 'dashboard' ? 'active' : ''}`}
-                onClick={() => setView('dashboard')}
-              >
-                Progress
-              </button>
-            </>
+        <div className="app__header-inner">
+          <span className="brand">
+            <LogoMark />
+            <span className="brand__name">ExamSense</span>
+          </span>
+
+          {tabs.length > 0 && (
+            <nav className="app__nav" aria-label="Sections">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className="app__nav-tab"
+                  aria-current={view === tab.id ? 'page' : undefined}
+                  onClick={() => setView(tab.id)}
+                  disabled={tab.disabled}
+                  title={tab.disabled ? 'Pick a topic first' : undefined}
+                >
+                  <Icon name={tab.icon} size={16} />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </nav>
           )}
-          {isAdmin && (
-            <button
-              className={`app__nav-tab ${view === 'usage' ? 'active' : ''}`}
-              onClick={() => setView('usage')}
-            >
-              Areas
-            </button>
-          )}
-        </nav>
+        </div>
       </header>
 
-      <main className="app__content">
+      <main id="main" className="app__content" ref={mainRef} tabIndex={-1}>
         {view === 'upload' && (
           <NoteUpload
             topics={topics}
@@ -123,12 +138,13 @@ export default function App() {
         {view === 'dashboard' && (
           <>
             <ProgressDashboard noteId={noteId} topics={topics} />
-            <div className="dashboard__actions">
-              <button className="btn-primary" onClick={() => setView('upload')}>
-                ← Back to Topics
+            <div className="page-actions">
+              <button type="button" className="btn btn--primary" onClick={() => setView('upload')}>
+                <Icon name="arrowLeft" size={16} />
+                Back to topics
               </button>
-              <button className="btn-ghost" onClick={handleReset}>
-                New Notes
+              <button type="button" className="btn btn--ghost" onClick={handleReset}>
+                Start with new notes
               </button>
             </div>
           </>
@@ -138,6 +154,26 @@ export default function App() {
           <UsageAreas adminKey={adminKey} onBack={() => setView('upload')} />
         )}
       </main>
+
+      <footer className="app__footer">
+        <div className="app__footer-inner">
+          <p>
+            Built by{' '}
+            <a href="https://hksingh.vercel.app" target="_blank" rel="noopener noreferrer">
+              Himanshu Kumar Singh
+            </a>
+          </p>
+          <a
+            className="app__footer-gh"
+            href="https://github.com/himavi/examsense"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon name="github" size={16} />
+            Source on GitHub
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }

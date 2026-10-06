@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getWeakTopics } from '../api.js';
+import { Icon, Meter, Skeleton, Spinner } from './ui';
+import { toneFor, toneLabel } from '../utils.js';
 
 async function getExplanation(topic) {
   const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -8,11 +10,31 @@ async function getExplanation(topic) {
   return res.json();
 }
 
-function accuracyClass(accuracy, attempted) {
-  if (!attempted) return 'topic-row topic-row--pending';
-  if (accuracy < 0.4) return 'topic-row topic-row--danger';
-  if (accuracy < 0.6) return 'topic-row topic-row--warning';
-  return 'topic-row';
+/** Render the model's plain-text answer: paragraphs, bullet lines and **bold**. No HTML injection. */
+function RichText({ text }) {
+  const inline = (s, key) =>
+    s.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+      part.startsWith('**') && part.endsWith('**') ? (
+        <strong key={`${key}-${i}`}>{part.slice(2, -2)}</strong>
+      ) : (
+        part
+      ),
+    );
+  return String(text)
+    .split(/\n{2,}/)
+    .map((block, bi) => {
+      const lines = block.split('\n').filter((l) => l.trim());
+      if (lines.length > 0 && lines.every((l) => /^\s*(?:[-*•]|\d+[.)])\s+/.test(l))) {
+        return (
+          <ul key={bi}>
+            {lines.map((l, li) => (
+              <li key={li}>{inline(l.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, ''), `${bi}-${li}`)}</li>
+            ))}
+          </ul>
+        );
+      }
+      return <p key={bi}>{inline(lines.join(' '), bi)}</p>;
+    });
 }
 
 export default function ProgressDashboard({ noteId, topics = [] }) {
@@ -21,15 +43,23 @@ export default function ProgressDashboard({ noteId, topics = [] }) {
   const [error, setError] = useState(null);
   const [explanations, setExplanations] = useState({});
   const [explaining, setExplaining] = useState({});
+  const [explainErrors, setExplainErrors] = useState({});
 
   async function handleExplain(topicName) {
     if (explanations[topicName] || explaining[topicName]) return;
     setExplaining((prev) => ({ ...prev, [topicName]: true }));
+    setExplainErrors((prev) => ({ ...prev, [topicName]: null }));
     try {
       const data = await getExplanation(topicName);
-      setExplanations((prev) => ({ ...prev, [topicName]: data.explanation ?? data.text ?? JSON.stringify(data) }));
+      const text =
+        data.explanation ??
+        data.text ??
+        (data.explanation === null
+          ? 'No incorrect answers are recorded for this topic yet, so there is nothing to explain.'
+          : JSON.stringify(data));
+      setExplanations((prev) => ({ ...prev, [topicName]: text }));
     } catch {
-      setExplanations((prev) => ({ ...prev, [topicName]: 'Could not load explanation. Please try again.' }));
+      setExplainErrors((prev) => ({ ...prev, [topicName]: 'Could not load explanation. Please try again.' }));
     } finally {
       setExplaining((prev) => ({ ...prev, [topicName]: false }));
     }
@@ -47,13 +77,52 @@ export default function ProgressDashboard({ noteId, topics = [] }) {
 
   if (!noteId) return null;
 
-  if (loading) return (
-    <div className="dashboard__loading">
-      <p>Loading progress…</p>
-    </div>
+  const heading = (
+    <header className="page-heading">
+      <p className="eyebrow">Analytics</p>
+      <h1 className="page-heading__title">Your progress</h1>
+      <p className="page-heading__sub">Accuracy per topic, based on every quiz answer you have submitted.</p>
+    </header>
   );
 
-  if (error) return <p className="dashboard__error">{error}</p>;
+  if (loading) {
+    return (
+      <div className="dashboard" aria-busy="true">
+        {heading}
+        <p className="visually-hidden" role="status">Loading progress…</p>
+        <div className="overview card" aria-hidden="true">
+          <div className="overview__main">
+            <Skeleton width="40%" height={10} />
+            <Skeleton width={120} height={44} className="skeleton--title" />
+            <Skeleton height={10} />
+          </div>
+          <div className="overview__stats">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="stat">
+                <Skeleton width={56} height={26} />
+                <Skeleton width="70%" height={10} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard">
+        {heading}
+        <div className="alert alert--error" role="alert">
+          <Icon name="alert" />
+          <div>
+            <p className="alert__title">Something went wrong</p>
+            <p className="alert__body">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Merge the full topic list from the note with attempt-based accuracy.
   const accuracyByTopic = new Map(progress.map((p) => [p.topic, p.accuracy]));
@@ -70,7 +139,15 @@ export default function ProgressDashboard({ noteId, topics = [] }) {
     });
 
   if (rows.length === 0) {
-    return <p className="dashboard__empty">No topics yet. Upload notes to get started.</p>;
+    return (
+      <div className="dashboard">
+        {heading}
+        <div className="empty card">
+          <Icon name="chart" size={22} />
+          <p>No topics yet. Upload notes to get started.</p>
+        </div>
+      </div>
+    );
   }
 
   const attemptedRows = rows.filter((r) => r.attempted);
@@ -84,70 +161,130 @@ export default function ProgressDashboard({ noteId, topics = [] }) {
 
   return (
     <div className="dashboard">
-      <div className="page-heading">
-        <h1 className="page-heading__title">Your Progress</h1>
-        <p className="page-heading__sub">Based on your quiz attempts across all topics.</p>
-      </div>
+      {heading}
 
-      <div className="dashboard__stats">
-        <div className="stat-card">
-          <div className="stat-card__value">{completedCount > 0 ? `${Math.round(avg * 100)}%` : '—'}</div>
-          <div className="stat-card__label">Avg Score</div>
+      <section className="overview card" aria-label="Summary">
+        <div className="overview__main">
+          <p className="overview__label">Total progress</p>
+          <p className="overview__value">
+            {Math.round(overall * 100)}
+            <span>%</span>
+          </p>
+          <Meter value={overall} label="Total progress" size="lg" />
+          <p className="overview__sub">
+            {completedCount} of {totalCount} topics attempted. Unattempted topics count as 0%.
+          </p>
         </div>
-        <div className="stat-card">
-          <div className="stat-card__value">{completedCount}/{totalCount}</div>
-          <div className="stat-card__label">Completed</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card__value">{weakCount}</div>
-          <div className="stat-card__label">Need Work</div>
-        </div>
-      </div>
+        <dl className="overview__stats">
+          <div className="stat">
+            <dt className="stat__label">Average score</dt>
+            <dd className="stat__value">{completedCount > 0 ? `${Math.round(avg * 100)}%` : '—'}</dd>
+          </div>
+          <div className="stat">
+            <dt className="stat__label">Completed</dt>
+            <dd className="stat__value">
+              {completedCount}
+              <span className="stat__of">/{totalCount}</span>
+            </dd>
+          </div>
+          <div className={`stat ${weakCount > 0 ? 'stat--warn' : ''}`}>
+            <dt className="stat__label">Need work</dt>
+            <dd className="stat__value">{weakCount}</dd>
+          </div>
+        </dl>
+      </section>
 
-      <p className="dashboard__section-label">Topic breakdown</p>
-      <ul className="dashboard__list">
-        {rows.map((row) => (
-          <li key={row.topic} className={accuracyClass(row.accuracy, row.attempted)}>
-            <div className="topic-row__top">
-              <span className="topic-row__name">{row.topic}</span>
-              <span className="topic-row__accuracy">
-                {row.attempted ? `${Math.round(row.accuracy * 100)}%` : 'Not started'}
-              </span>
-            </div>
-            <div className="topic-row__bar-bg">
-              <div
-                className="topic-row__bar-fill"
-                style={{ width: `${Math.round(row.accuracy * 100)}%` }}
-              />
-            </div>
-            {row.attempted && row.accuracy < 0.7 && (
-              <>
-                <button
-                  className="topic-row__explain-btn"
-                  onClick={() => handleExplain(row.topic)}
-                  disabled={explaining[row.topic]}
-                >
-                  {explaining[row.topic] ? 'Loading…' : 'Why am I struggling?'}
-                </button>
-                {explanations[row.topic] && (
-                  <p className="topic-row__explanation">{explanations[row.topic]}</p>
+      <section aria-labelledby="breakdown-title">
+        <div className="section-head">
+          <div>
+            <h2 id="breakdown-title" className="section-head__title">Topic breakdown</h2>
+            <p className="section-head__sub">Weakest first. Topics under 70% can be explained by the AI tutor.</p>
+          </div>
+          <ul className="legend" aria-label="Legend">
+            <li><span className="legend__dot legend__dot--good" />60%+</li>
+            <li><span className="legend__dot legend__dot--warning" />40–59%</li>
+            <li><span className="legend__dot legend__dot--danger" />Under 40%</li>
+          </ul>
+        </div>
+
+        <ul className="breakdown">
+          {rows.map((row) => {
+            const tone = toneFor(row.accuracy, row.attempted);
+            const canExplain = row.attempted && row.accuracy < 0.7;
+            const explanation = explanations[row.topic];
+            const busy = explaining[row.topic];
+            const explainError = explainErrors[row.topic];
+            const panelId = `explain-${row.topic.replace(/\W+/g, '-')}`;
+            return (
+              <li key={row.topic} className={`topic-row topic-row--${tone}`}>
+                <div className="topic-row__top">
+                  <span className="topic-row__name">{row.topic}</span>
+                  <span className="topic-row__accuracy">
+                    {row.attempted ? (
+                      <>
+                        <span className="topic-row__pct">{Math.round(row.accuracy * 100)}%</span>
+                        <span className={`chip chip--${tone}`}>{toneLabel(tone)}</span>
+                      </>
+                    ) : (
+                      <span className="chip chip--neutral">Not started</span>
+                    )}
+                  </span>
+                </div>
+                <Meter value={row.accuracy} tone={tone} label={`${row.topic} accuracy`} />
+
+                {canExplain && (
+                  <div className="topic-row__explain">
+                    {!explanation && (
+                      <button
+                        type="button"
+                        className="btn btn--soft btn--sm"
+                        onClick={() => handleExplain(row.topic)}
+                        disabled={busy}
+                        aria-controls={panelId}
+                      >
+                        {busy ? (
+                          <>
+                            <Spinner size={14} /> Asking the tutor…
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="bulb" size={16} /> {explainError ? 'Try again' : 'Why am I struggling?'}
+                          </>
+                        )}
+                      </button>
+                    )}
+                    <div id={panelId} aria-live="polite">
+                      {busy && (
+                        <div className="tutor tutor--loading" aria-hidden="true">
+                          <Skeleton width="95%" />
+                          <Skeleton width="88%" />
+                          <Skeleton width="62%" />
+                        </div>
+                      )}
+                      {busy && <span className="visually-hidden">Generating an explanation…</span>}
+                      {explainError && !busy && (
+                        <p className="inline-error">
+                          <Icon name="alert" size={16} /> {explainError}
+                        </p>
+                      )}
+                      {explanation && (
+                        <div className="tutor">
+                          <p className="tutor__label">
+                            <Icon name="bulb" size={14} /> AI tutor · based on the questions you missed
+                          </p>
+                          <div className="tutor__body">
+                            <RichText text={explanation} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
-
-      <div className="dashboard__total">
-        <div className="dashboard__total-head">
-          <span className="dashboard__total-label">Total Progress</span>
-          <span className="dashboard__total-value">{Math.round(overall * 100)}%</span>
-        </div>
-        <div className="dashboard__total-bar-bg">
-          <div className="dashboard__total-bar-fill" style={{ width: `${Math.round(overall * 100)}%` }} />
-        </div>
-        <p className="dashboard__total-sub">{completedCount} of {totalCount} topics attempted</p>
-      </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
     </div>
   );
 }
